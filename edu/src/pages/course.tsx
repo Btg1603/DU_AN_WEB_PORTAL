@@ -247,7 +247,8 @@ interface ApiCourse {
 
 export default function CourseDetail() {
   const { courseId } = useParams<{ courseId: string }>();
-  const id = Number(courseId);
+  // CourseId có thể là MongoDB ObjectId string, không phải number
+  const id = courseId;
   const { user } = useAuth();
 
   const [expandedSection, setExpandedSection] = useState<number | null>(null);
@@ -267,7 +268,7 @@ export default function CourseDetail() {
   interface Progress {
     id?: string;
     userId: number | string;
-    courseId: number;
+    courseId: number | string;
     sectionId: number;
     completedAt: string;
   }
@@ -276,29 +277,27 @@ export default function CourseDetail() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [coursesRes, enrollmentsRes, lessonsRes] = await Promise.all([
+        const [coursesRes, enrollmentsRes] = await Promise.all([
           apiGet<ApiCourse[]>("/courses"),
           apiGet<Enrollment[]>("/enrollments"),
-          apiGet<Lesson[]>("/lessons"),
         ]);
         
-        // Find course by id (handle both string and number)
+        // Find course by id (handle both string ObjectId and number)
         const foundCourse = coursesRes.find((c) => {
-          const courseIdNum = typeof c.id === 'string' ? Number(c.id) : c.id;
-          return courseIdNum === id;
+          const cId = String(c.id);
+          return cId === id;
         });
         
         setCourse(foundCourse || null);
         setEnrollments(enrollmentsRes);
         
-        // Filter lessons for this course
-        const courseIdNum = id;
-        const courseLessons = lessonsRes.filter((l) => {
-          const lessonCourseId = typeof l.courseId === 'string' ? Number(l.courseId) : l.courseId;
-          return lessonCourseId === courseIdNum;
-        }).sort((a, b) => a.order - b.order); // Sort by order
-        
-        setLessons(courseLessons);
+        // Lấy lessons cho course này
+        if (foundCourse) {
+          const courseId = typeof foundCourse.id === 'string' ? foundCourse.id : String(foundCourse.id);
+          const lessonsRes = await apiGet<Lesson[]>(`/lessons/course/${courseId}`);
+          const sortedLessons = lessonsRes.sort((a, b) => a.order - b.order);
+          setLessons(sortedLessons);
+        }
       } catch (err) {
         console.error("Error loading data:", err);
       } finally {
@@ -574,20 +573,49 @@ export default function CourseDetail() {
       <Navbar />
 
       <div className="max-w-7xl mx-auto px-6 py-8">
+        {loading && (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p className="text-gray-600 mt-4 font-medium">Đang tải khóa học...</p>
+          </div>
+        )}
+        
+        {!loading && !course && (
+          <div className="text-center py-12 bg-red-50 border-2 border-red-200 rounded-xl">
+            <p className="text-red-600 font-semibold">Không tìm thấy khóa học</p>
+          </div>
+        )}
+        
+        {!loading && course && lessons.length === 0 && (
+          <div className="text-center py-12 bg-yellow-50 border-2 border-yellow-200 rounded-xl">
+            <p className="text-yellow-600 font-semibold">Khóa học chưa có bài học</p>
+          </div>
+        )}
+        
+        {!loading && course && lessons.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Video Player */}
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
               <div className="relative bg-black aspect-video">
-                <iframe
-                  key={`${courseId}-${currentSection}`}
-                  src={getCurrentSection().videoUrl}
-                  title={getCurrentSection().title}
-                  className="absolute inset-0 w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
+                {getCurrentSection().videoUrl ? (
+                  <iframe
+                    key={`${courseId}-${currentSection}`}
+                    src={getCurrentSection().videoUrl}
+                    title={getCurrentSection().title}
+                    className="absolute inset-0 w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                    <div className="text-center text-white">
+                      <p className="text-xl font-semibold">Không có video</p>
+                      <p className="text-sm text-gray-400">Bài học này chưa có video</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="p-8 bg-gradient-to-br from-white to-gray-50">
@@ -854,6 +882,7 @@ export default function CourseDetail() {
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {/* Footer */}

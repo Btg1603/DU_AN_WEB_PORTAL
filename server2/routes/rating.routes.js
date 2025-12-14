@@ -8,6 +8,19 @@ const { checkValidId } = require('../middleware/validationMiddleware');
 // -------------------------------------------------------------------
 // ... (Các route GET / và GET /course giữ nguyên theo bản bạn cung cấp)
 
+// @desc Lấy TẤT CẢ đánh giá (Public)
+// @route   GET /ratings
+// @access  Public
+router.get('/', async (req, res) => {
+    try {
+        const ratings = await Rating.find({})
+            .populate('userId', 'username fullName avatar'); 
+        res.json(ratings);
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi Server khi lấy tất cả đánh giá.' });
+    }
+});
+
 // [CẬP NHẬT POPULATE] @desc Lấy tất cả đánh giá cho một khóa học
 // @route   GET /ratings/course/:courseId
 // @access  Public

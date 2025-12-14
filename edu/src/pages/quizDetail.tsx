@@ -5,15 +5,15 @@ import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/navbar";
 
 interface Question {
-  id: number;
+  id: string;
   question: string;
   options: string[];
   correctIndex: number;
 }
 
 interface Quiz {
-  id: number;
-  courseId: number;
+  id: string;
+  courseId: string;
   title: string;
   questions: Question[];
 }
@@ -21,7 +21,7 @@ interface Quiz {
 export default function QuizDetailPage() {
   const { quizId } = useParams<{ quizId: string }>();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
-  const [answers, setAnswers] = useState<Record<number, number | null>>({});
+  const [answers, setAnswers] = useState<Record<string, number | null>>({});
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ score: number; total: number } | null>(
     null
@@ -33,12 +33,11 @@ export default function QuizDetailPage() {
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
-        const data = await apiGet<Quiz[]>(`/quizzes?id=${quizId}`);
-        const current = data[0] ?? null;
-        setQuiz(current);
-        if (current) {
-          const initial: Record<number, number | null> = {};
-          current.questions.forEach((q) => {
+        const data = await apiGet<Quiz>(`/quizzes/${quizId}`);
+        setQuiz(data);
+        if (data) {
+          const initial: Record<string, number | null> = {};
+          data.questions.forEach((q) => {
             initial[q.id] = null;
           });
           setAnswers(initial);
@@ -51,7 +50,7 @@ export default function QuizDetailPage() {
     if (quizId) fetchQuiz();
   }, [quizId]);
 
-  const handleSelect = (questionId: number, optionIndex: number) => {
+  const handleSelect = (questionId: string, optionIndex: number) => {
     if (result) return;
     setAnswers((prev) => ({ ...prev, [questionId]: optionIndex }));
   };
@@ -68,8 +67,8 @@ export default function QuizDetailPage() {
       const score = Math.round((correct / quiz.questions.length) * 100);
       setResult({ score, total: quiz.questions.length });
 
+      // Không gửi userId - server sẽ lấy từ authenticated user
       await apiPost("/quizResults", {
-        userId: user.id,
         quizId: quiz.id,
         score,
         correct,

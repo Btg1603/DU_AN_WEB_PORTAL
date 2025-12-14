@@ -15,8 +15,13 @@ const { checkValidId } = require('../middleware/validationMiddleware');
 router.get('/', async (req, res) => {
     try {
         // Lấy tất cả các khóa học, có thể thêm pagination/filter sau
-        const courses = await Course.find({}); 
-        res.json(courses);
+        const courses = await Course.find({}).lean(); 
+        // Map lại _id thành id để khớp với frontend
+        const coursesWithId = courses.map(course => ({
+            ...course,
+            id: course._id.toString()
+        }));
+        res.json(coursesWithId);
     } catch (error) {
         // Gửi lỗi server 500 nếu có vấn đề về DB
         res.status(500).json({ message: 'Lỗi server khi lấy danh sách khóa học.' });
@@ -28,9 +33,12 @@ router.get('/', async (req, res) => {
 // @access  Public
 router.get('/:id', checkValidId, async (req, res) => {
     try {
-        const course = await Course.findById(req.params.id);
+        const course = await Course.findById(req.params.id).lean();
         if (course) {
-            res.json(course);
+            res.json({
+                ...course,
+                id: course._id.toString()
+            });
         } else {
             res.status(404).json({ message: 'Không tìm thấy khóa học.' });
         }

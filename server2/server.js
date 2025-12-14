@@ -33,6 +33,7 @@ try {
     app.use('/api/enrollments', require('./routes/enrollment.routes'));
     app.use('/api/progress', require('./routes/progress.routes'));
     app.use('/api/quizzes', require('./routes/quiz.routes'));
+    app.use('/api/quizResults', require('./routes/quizResults.routes'));
     app.use('/api/ratings', require('./routes/rating.routes'));
 } catch (error) {
     console.error("⚠️ Lỗi khi load routes. Hãy kiểm tra xem file route có tồn tại không:", error.message);

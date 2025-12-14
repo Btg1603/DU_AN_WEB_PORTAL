@@ -7,7 +7,7 @@ import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/navbar";
 
 interface ApiCourse {
-  id: number;
+  id: string;
   title: string;
   category: string;
   level: string;
@@ -20,24 +20,24 @@ interface ApiCourse {
 }
 
 interface Enrollment {
-  id: number;
-  userId: number;
-  courseId: number | string;
+  id: string;
+  userId: string;
+  courseId: string;
   enrolledAt: string;
 }
 
 interface Rating {
   id: string;
-  userId: number;
-  courseId: number;
+  userId: string;
+  courseId: string;
   rating: number;
   comment?: string;
   createdAt: string;
 }
 
 interface Lesson {
-  id: number | string;
-  courseId: number | string;
+  id: string;
+  courseId: string;
   order: number;
   title: string;
   videoUrl: string;
@@ -63,9 +63,9 @@ export default function NaukriCoursesPage() {
         // Also load user's enrollments separately to check if user is enrolled
         const [courseRes, allEnrollmentsRes, userEnrollmentsRes, ratingsRes, lessonsRes] = await Promise.all([
           apiGet<ApiCourse[]>("/courses"),
-          apiGet<Enrollment[]>("/enrollments"), // Load ALL enrollments
+          apiGet<Enrollment[]>("/enrollments/all"), // Load ALL enrollments
           user
-            ? apiGet<Enrollment[]>(`/enrollments?userId=${user.id}`)
+            ? apiGet<Enrollment[]>(`/enrollments/user/me`)
             : Promise.resolve([] as Enrollment[]),
           apiGet<Rating[]>("/ratings"),
           apiGet<Lesson[]>("/lessons"),
@@ -87,7 +87,7 @@ export default function NaukriCoursesPage() {
     fetchData();
   }, [user]);
 
-  const getAverageRating = (courseId: number) => {
+  const getAverageRating = (courseId: string) => {
     const courseRatings = ratings.filter((r) => r.courseId === courseId);
     if (courseRatings.length === 0) return 0;
     const avg = courseRatings.reduce((sum, r) => sum + r.rating, 0) / courseRatings.length;
@@ -103,25 +103,17 @@ export default function NaukriCoursesPage() {
   );
 
   // Helper functions to calculate accurate data
-  const getCourseStudents = (courseId: number | string) => {
-    const courseIdNum = typeof courseId === 'string' ? Number(courseId) : courseId;
+  const getCourseStudents = (courseId: string) => {
     const uniqueUsers = new Set(
       enrollments
-        .filter((e) => {
-          const enrollmentCourseId = typeof e.courseId === 'string' ? Number(e.courseId) : e.courseId;
-          return enrollmentCourseId === courseIdNum;
-        })
+        .filter((e) => e.courseId === courseId)
         .map((e) => String(e.userId))
     );
     return uniqueUsers.size;
   };
 
-  const getCourseLessons = (courseId: number | string) => {
-    const courseIdNum = typeof courseId === 'string' ? Number(courseId) : courseId;
-    return lessons.filter((l) => {
-      const lessonCourseId = typeof l.courseId === 'string' ? Number(l.courseId) : l.courseId;
-      return lessonCourseId === courseIdNum;
-    }).length;
+  const getCourseLessons = (courseId: string) => {
+    return lessons.filter((l) => l.courseId === courseId).length;
   };
 
   const filteredCourses = useMemo(
@@ -139,25 +131,39 @@ export default function NaukriCoursesPage() {
     [courses, search, category, level]
   );
 
-  const handleEnroll = async (courseId: number) => {
+  const handleEnroll = async (courseId: string) => {
+    console.log('[handleEnroll] Starting, courseId:', courseId, 'user:', user?.id);
+    
     if (!user) {
+      console.log('[handleEnroll] No user, redirecting to login');
       navigate("/login");
       return;
     }
+    
+    // Luôn chuyển sang trang video khi đã ghi danh hoặc đã học
     if (enrolledCourseIds.has(courseId)) {
+      console.log('[handleEnroll] Already enrolled, navigating to coursedetail');
       navigate(`/coursedetail/${courseId}`);
       return;
     }
+    
     try {
+      console.log('[handleEnroll] Posting enrollment request...');
       const created = await apiPost<Enrollment>("/enrollments", {
-        userId: user.id,
         courseId,
-        enrolledAt: new Date().toISOString(),
       });
+      console.log('[handleEnroll] Enrollment created:', created);
       setEnrollments((prev) => [...prev, created]);
+      // Sau khi ghi danh thành công, chuyển sang trang video
+      console.log('[handleEnroll] Navigating to coursedetail');
+      navigate(`/coursedetail/${courseId}`);
     } catch (err) {
-      console.error(err);
-      alert("Có lỗi khi ghi danh khoá học");
+      console.error('[handleEnroll] Error occurred:', err);
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      alert("Có lỗi khi ghi danh khoá học: " + errorMsg);
+      // Thử chuyển trang dù có lỗi, để xem lỗi chi tiết ở trang video
+      console.log('[handleEnroll] Despite error, attempting navigation...');
+      navigate(`/coursedetail/${courseId}`);
     }
   };
 

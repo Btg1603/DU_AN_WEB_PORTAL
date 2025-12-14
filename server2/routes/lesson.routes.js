@@ -10,10 +10,10 @@ const { checkValidId } = require('../middleware/validationMiddleware');
 
 // -------------------------------------------------------------------
 
-// @desc   Lấy TẤT CẢ Lessons (Cho mục đích Admin/Quản lý)
-// @route   GET /lessons
-// @access  Private/Admin
-router.get('/', protect, admin, async (req, res) => {
+// @desc   Lấy TẤT CẢ Lessons (Public - để hiển thị)
+// @route   GET /lessons
+// @access  Public
+router.get('/', async (req, res) => {
     try {
         // Lấy tất cả bài học và thông tin khóa học
         const lessons = await Lesson.find({}).populate('courseId'); 
@@ -29,11 +29,14 @@ router.get('/', protect, admin, async (req, res) => {
 // Dùng checkValidId cho tham số courseId
 router.get('/course/:courseId', checkValidId, async (req, res) => {
     try {
-        const lessons = await Lesson.find({ courseId: req.params.courseId }).sort('order');
-        res.json(lessons);
-    } catch (error) {
-        res.status(500).json({ message: 'Lỗi Server khi lấy danh sách bài học.' });
-    }
+        console.log('[GET /lessons/course/:courseId] courseId:', req.params.courseId);
+        const lessons = await Lesson.find({ courseId: req.params.courseId }).sort('order');
+        console.log('[GET /lessons/course/:courseId] Found lessons:', lessons.length);
+        res.json(lessons);
+    } catch (error) {
+        console.error('[GET /lessons/course/:courseId] Error:', error.message);
+        res.status(500).json({ message: 'Lỗi Server khi lấy danh sách bài học.' });
+    }
 });
 
 // @desc    Lấy một Lesson theo ID
