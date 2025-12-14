@@ -1,65 +1,49 @@
-
 const express = require('express');
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
 const cors = require('cors');
+const dotenv = require('dotenv');
 
-// --- 1. IMPORT TẤT CẢ CÁC FILE ROUTE ---
-const userRouter = require('./routes/user.routes');
-const courseRouter = require('./routes/course.routes');
-const lessonRouter = require('./routes/lesson.routes');
-const enrollmentRouter = require('./routes/enrollment.routes'); 
-const progressRouter = require('./routes/progress.routes');    
-const quizRouter = require('./routes/quiz.routes');         
-const ratingRouter = require('./routes/rating.routes');
-
+// 1. Cấu hình biến môi trường
 dotenv.config();
 
+// 2. Khởi tạo ứng dụng Express
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// 3. Middleware
+app.use(cors()); // Cho phép Frontend gọi API
+app.use(express.json()); // Cho phép đọc dữ liệu JSON từ body request
 
-// Kết nối MongoDB
-const connectDB = async () => {
-    try {
-        await mongoose.connect(process.env.MONGO_URI); 
-        console.log('MongoDB kết nối thành công! 💾');
-    } catch (err) {
-       console.error('Lỗi kết nối MongoDB:', err.message);
-        process.exit(1); 
-    }
-};
+// 4. Kết nối Database MongoDB
+// Lưu ý: Đảm bảo bạn đã có biến MONGO_URI trong file .env
+const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/education_portal';
 
-connectDB();
+mongoose.connect(mongoURI)
+  .then(() => console.log('✅ MongoDB connected successfully'))
+  .catch((err) => {
+    console.error('❌ MongoDB connection error:', err);
+    // Không dừng server ngay để debug dễ hơn, nhưng thực tế có thể process.exit(1)
+  });
 
-// --- 2. ĐỊNH NGHĨA CÁC ĐƯỜNG DẪN GỐC SỬ DỤNG ROUTER ĐÃ CHIA ---
+// 5. Khai báo Routes (Dựa trên danh sách file bạn gửi)
+try {
+    app.use('/api/users', require('./routes/user.routes'));
+    app.use('/api/courses', require('./routes/course.routes'));
+    app.use('/api/lessons', require('./routes/lesson.routes'));
+    app.use('/api/enrollments', require('./routes/enrollment.routes'));
+    app.use('/api/progress', require('./routes/progress.routes'));
+    app.use('/api/quizzes', require('./routes/quiz.routes'));
+    app.use('/api/ratings', require('./routes/rating.routes'));
+} catch (error) {
+    console.error("⚠️ Lỗi khi load routes. Hãy kiểm tra xem file route có tồn tại không:", error.message);
+}
 
-// >>> SỬA LỖI ĐỊNH TUYẾN: THÊM '/api' để khớp với Frontend gọi: /api/users/login <<<
-app.use('/api/users', userRouter);     
-app.use('/api/courses', courseRouter);  
-app.use('/api/lessons', lessonRouter);  
-app.use('/api/enrollments', enrollmentRouter); 
-app.use('/api/progress', progressRouter);
-app.use('/api/quizzes', quizRouter); 
-app.use('/api/ratings', ratingRouter);
-
-// Tuyến đường mặc định
+// 6. Route mặc định để test server
 app.get('/', (req, res) => {
-    res.send('LMS API Server đang hoạt động!');
+  res.send('API Education Portal đang chạy...');
 });
 
-// THÊM: Xử lý lỗi 404 (Nếu không có route nào match)
-const notFound = (req, res, next) => {
-    const error = new Error(`Không tìm thấy - ${req.originalUrl}`);
-    res.status(404);
-    next(error);
-};
-app.use(notFound);
-
-// Khởi động Server
+// 7. Khởi động Server
 app.listen(PORT, () => {
-    console.log(`🚀 Server đang chạy tại http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
