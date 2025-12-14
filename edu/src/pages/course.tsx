@@ -497,7 +497,7 @@ export default function CourseDetail() {
       enrollments
         .filter((e) => {
           const enrollmentCourseId = typeof e.courseId === 'string' ? Number(e.courseId) : e.courseId;
-          return enrollmentCourseId === courseIdNum;
+          return String(enrollmentCourseId) === String(courseIdNum);
         })
         .map((e) => String(e.userId))
     );
@@ -508,7 +508,7 @@ export default function CourseDetail() {
     const courseIdNum = id;
     return lessons.filter((l) => {
       const lessonCourseId = typeof l.courseId === 'string' ? Number(l.courseId) : l.courseId;
-      return lessonCourseId === courseIdNum;
+      return String(lessonCourseId) === String(courseIdNum);
     }).length;
   };
 
