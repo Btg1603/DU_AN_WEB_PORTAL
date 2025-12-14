@@ -35,8 +35,9 @@ try {
     app.use('/api/quizzes', require('./routes/quiz.routes'));
     app.use('/api/quizResults', require('./routes/quizResults.routes'));
     app.use('/api/ratings', require('./routes/rating.routes'));
+    console.log('✅ All routes loaded successfully');
 } catch (error) {
-    console.error("⚠️ Lỗi khi load routes. Hãy kiểm tra xem file route có tồn tại không:", error.message);
+    console.error("⚠️ Lỗi khi load routes:", error.message);
 }
 
 // 6. Route mặc định để test server
