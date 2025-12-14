@@ -4,8 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function NaukriLogin() {
-  const [name, setName] = useState("");
-  const [password, setPassword] = useState("");
+const [email, setEmail] = useState(""); 
+const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -41,29 +41,31 @@ export default function NaukriLogin() {
     return () => clearInterval(timer);
   }, [slides.length]);
 
-  const handleSubmit = async () => {
-    setError("");
+const handleSubmit = async () => {
+  setError("");
 
-    if (!name || !password) {
-      setError("Tên đăng nhập và mật khẩu không được để trống!");
-      return;
-    }
+  // SỬA: Kiểm tra email thay vì name
+  if (!email || !password) {
+    setError("Email/Tên đăng nhập và mật khẩu không được để trống!");
+    return;
+  }
 
-    setLoading(true);
-    try {
-      await login(name, password);
-      setName("");
-      setPassword("");
-      nav("/homepage");
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Có lỗi xảy ra khi đăng nhập!");
-      }
-    }
-    setLoading(false);
-  };
+  setLoading(true);
+  try {
+    // SỬA: Truyền email thay vì name
+    await login(email, password);
+    setEmail(""); // SỬA: clear email
+    setPassword("");
+    nav("/homepage");
+  } catch (err) {
+    if (err instanceof Error) {
+      setError(err.message);
+    } else {
+      setError("Có lỗi xảy ra khi đăng nhập!");
+    }
+  }
+  setLoading(false);
+};
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
@@ -107,8 +109,8 @@ export default function NaukriLogin() {
               </label>
               <input
                 type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Tên đăng nhập"
                 className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
