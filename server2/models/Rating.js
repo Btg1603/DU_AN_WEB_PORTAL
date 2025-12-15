@@ -1,28 +1,11 @@
-const mongoose = require('mongoose');
-const { Schema } = mongoose;
+const express = require('express');
+const router = express.Router();
+const ratingController = require('../controllers/rating.controller');
 
-const RatingSchema = new Schema({
-    userId: { 
-        type: Schema.Types.ObjectId, 
-        ref: 'User', 
-        required: true 
-    },
-    courseId: { 
-        type: Schema.Types.ObjectId, 
-        ref: 'Course', 
-        required: true 
-    },
-    rating: {
-        type: Number,
-        required: true,
-        min: 1,
-        max: 5
-    },
-    comment: String,
-    createdAt: {
-        type: Date,
-        default: Date.now
-    }
-});
+// Đường dẫn gốc: /api/ratings
 
-module.exports = mongoose.model('Rating', RatingSchema);
+router.route('/')
+  .post(ratingController.createRating)     // Tạo đánh giá mới
+  .get(ratingController.getRatingsByCourse); // Lấy danh sách đánh giá của khóa học
+
+module.exports = router;

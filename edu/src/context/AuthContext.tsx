@@ -90,7 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 4. HÀM LOGIN (SỬ DỤNG POST VÀ NHẬN JWT)
   // ----------------------------------------------------
   const login = useCallback(async (email: string, password: string) => {
-    const response = await fetch(`${API_URL}/api/users/login`, {
+    const response = await fetch('/api/users/login', {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }), // Backend dùng email
